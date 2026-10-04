@@ -1,0 +1,211 @@
+/*
+ * Design tokens and base styles.
+ *
+ * The palette borrows from a seed packet's sowing chart: evergreen ink on
+ * chalky paper, with one colour per state of a task's window.
+ */
+
+:root {
+	color-scheme: light dark;
+
+	--paper: light-dark(#f2f4ee, #0f1916);
+	--surface: light-dark(#fbfcf9, #17231f);
+	--ink: light-dark(#14251f, #e4eae2);
+	--ink-soft: light-dark(#55645d, #93a39a);
+	--rule: light-dark(#d6dcd1, #283831);
+	--rule-faint: light-dark(#e4e8df, #1c2924);
+
+	/* Window states */
+	--ripe: light-dark(#e3a211, #edb12e); /* open: can be done now */
+	--ripe-ink: light-dark(#7a5300, #f3c75f);
+	--sage: light-dark(#86ab9b, #4f8271); /* upcoming */
+	--sage-ink: light-dark(#2f6b58, #8cc0ac);
+	--beet: light-dark(#a3294f, #e2708f); /* overdue */
+
+	--font-display: 'Brygada 1918 Variable', Georgia, serif;
+	--font-body: 'Hanken Grotesk Variable', system-ui, sans-serif;
+
+	--text-small: 0.8125rem;
+	--text-body: 1rem;
+	--text-large: 1.3125rem;
+	--text-title: 1.75rem;
+	--text-display: clamp(2rem, 1.4rem + 2.6vw, 2.75rem);
+
+	--radius: 8px;
+	--header-height: 4rem;
+	--page-margin: clamp(1rem, 4vw, 2.5rem);
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	/* Phones would otherwise inflate text when turned to landscape. */
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+}
+
+body {
+	margin: 0;
+	background: var(--paper);
+	color: var(--ink);
+	font-family: var(--font-body);
+	font-size: var(--text-body);
+	line-height: 1.5;
+	font-variant-numeric: tabular-nums;
+	-webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p {
+	margin: 0;
+}
+
+h1,
+h2 {
+	font-family: var(--font-display);
+	font-weight: 500;
+	line-height: 1.15;
+	letter-spacing: -0.01em;
+	text-wrap: balance;
+}
+
+a {
+	color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+	font: inherit;
+	color: inherit;
+}
+
+button {
+	cursor: pointer;
+}
+
+a,
+button,
+label,
+summary {
+	/* No double-tap zoom, so a tap registers straight away. */
+	touch-action: manipulation;
+}
+
+:focus-visible {
+	outline: 2px solid var(--sage-ink);
+	outline-offset: 2px;
+}
+
+/* Buttons */
+
+.button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	min-height: 2.5rem;
+	padding: 0 1rem;
+	border: 1px solid var(--ink);
+	border-radius: var(--radius);
+	background: var(--ink);
+	color: var(--paper);
+	font-weight: 600;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.button:hover {
+	background: color-mix(in oklab, var(--ink) 86%, var(--paper));
+}
+
+.button.quiet {
+	border-color: var(--rule);
+	background: transparent;
+	color: var(--ink);
+	font-weight: 500;
+}
+
+.button.quiet:hover {
+	border-color: var(--ink-soft);
+	background: transparent;
+}
+
+.button.danger {
+	color: var(--beet);
+}
+
+.button:disabled {
+	opacity: 0.55;
+	cursor: default;
+}
+
+/* Form fields */
+
+.field {
+	display: grid;
+	gap: 0.375rem;
+}
+
+.field > span,
+.field > legend {
+	padding: 0;
+	font-size: var(--text-small);
+	font-weight: 600;
+	color: var(--ink-soft);
+}
+
+.input {
+	width: 100%;
+	/* Date fields have a wide natural size that they must be allowed to give up. */
+	min-width: 0;
+	min-height: 2.5rem;
+	padding: 0.4375rem 0.75rem;
+	border: 1px solid var(--rule);
+	border-radius: var(--radius);
+	background: var(--surface);
+}
+
+.input:hover {
+	border-color: var(--ink-soft);
+}
+
+textarea.input {
+	resize: vertical;
+}
+
+/* iOS centres a date within its field; line it up with the other fields. */
+.input::-webkit-date-and-time-value {
+	text-align: start;
+}
+
+.form-error {
+	color: var(--beet);
+	font-weight: 500;
+}
+
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}

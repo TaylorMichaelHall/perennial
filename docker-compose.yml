@@ -1,0 +1,17 @@
+services:
+  perennial:
+    # The image published from `main`. If it can't be pulled, it is built from
+    # this directory instead; `docker compose up -d --build` always builds it.
+    image: ghcr.io/taylormichaelhall/perennial:latest
+    build: .
+    container_name: perennial
+    restart: unless-stopped
+    ports:
+      - '${PORT:-3000}:3000'
+    environment:
+      INITIAL_PASSWORD: ${INITIAL_PASSWORD:-}
+      BACKUP_DIR: ${BACKUP_DIR:-}
+    volumes:
+      # On a host with SELinux (Fedora, RHEL), append `:Z` so the container may
+      # write here.
+      - ./data:/data
