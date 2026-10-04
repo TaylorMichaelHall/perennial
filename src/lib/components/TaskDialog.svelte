@@ -4,6 +4,7 @@
 	import { onMount, untrack } from 'svelte';
 	import { refreshAll } from '$app/navigation';
 	import { api, messageOf } from '#lib/api.ts';
+	import DateField from '#lib/components/DateField.svelte';
 	import { addMonths, formatDate, type RepeatUnit } from '#lib/dates.ts';
 	import { MAX_NOTES_LENGTH, MAX_REPEAT_EVERY, MAX_TITLE_LENGTH } from '#lib/limits.ts';
 	import { parseTags, statusOf, type RepeatFrom, type Task, type TaskFields } from '#lib/tasks.ts';
@@ -125,11 +126,11 @@
 		<div class="pair">
 			<label class="field">
 				<span>Can be started</span>
-				<input class="input" type="date" bind:value={opensOn} required />
+				<DateField bind:value={opensOn} required />
 			</label>
 			<label class="field">
 				<span>Due by</span>
-				<input class="input" type="date" bind:value={dueOn} min={opensOn} required />
+				<DateField bind:value={dueOn} min={opensOn} required />
 			</label>
 		</div>
 

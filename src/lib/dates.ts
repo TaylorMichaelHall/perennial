@@ -87,35 +87,138 @@ export function monthOf(date: ISODate): number {
 	return Number(date.slice(5, 7)) - 1;
 }
 
+/**
+ * How dates are written. `auto` follows the locale of whoever is reading; the
+ * rest are the same for everyone.
+ */
+export const DATE_FORMATS = ['auto', 'day-month', 'month-day', 'dmy', 'mdy', 'dmy-dots', 'iso'] as const;
+export type DateFormat = (typeof DATE_FORMATS)[number];
+/** The formats written in figures alone, which always include the year. */
+type NumericFormat = Exclude<DateFormat, 'auto' | 'day-month' | 'month-day'>;
+
+/** How a date is typed into a field under each numeric format. */
+export const DATE_ENTRY: Record<NumericFormat, string> = {
+	dmy: 'DD/MM/YYYY',
+	mdy: 'MM/DD/YYYY',
+	'dmy-dots': 'DD.MM.YYYY',
+	iso: 'YYYY-MM-DD'
+};
+
+/** The locale whose wording each format with a named month borrows. */
+const LOCALES = { auto: undefined, 'day-month': 'en-GB', 'month-day': 'en-US' } as const;
+
+export function isDateFormat(value: unknown): value is DateFormat {
+	return DATE_FORMATS.includes(value as DateFormat);
+}
+
+let chosen: DateFormat = 'auto';
+
+/** The format dates are written in unless another is asked for; see `setDateFormat`. */
+export function dateFormat(): DateFormat {
+	return chosen;
+}
+
+/** Sets the format from the owner's settings, in the browser and on the server alike. */
+export function setDateFormat(format: DateFormat): void {
+	chosen = format;
+}
+
+function isNumeric(format: DateFormat): format is NumericFormat {
+	return format in DATE_ENTRY;
+}
+
+function inFigures(date: ISODate, format: NumericFormat): string {
+	const [year, month, day] = date.split('-');
+	if (format === 'iso') return date;
+	if (format === 'mdy') return `${month}/${day}/${year}`;
+	return [day, month, year].join(format === 'dmy' ? '/' : '.');
+}
+
 const formatters = new Map<string, Intl.DateTimeFormat>();
 
-function formatter(options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
-	const key = JSON.stringify(options);
+function formatter(options: Intl.DateTimeFormatOptions, locale?: string): Intl.DateTimeFormat {
+	const key = JSON.stringify([locale, options]);
 	let cached = formatters.get(key);
 	if (!cached) {
-		cached = new Intl.DateTimeFormat(undefined, { ...options, timeZone: 'UTC' });
+		cached = new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' });
 		formatters.set(key, cached);
 	}
 	return cached;
 }
 
-/** "9 Nov", or "9 Nov 2031" when the year differs from `relativeTo`. */
-export function formatDate(date: ISODate, relativeTo: ISODate = today()): string {
+/**
+ * "9 Nov", or "9 Nov 2031" when the year differs from `relativeTo`. A format
+ * written in figures always has its year: "09/11/2031".
+ */
+export function formatDate(
+	date: ISODate,
+	relativeTo: ISODate = today(),
+	format: DateFormat = chosen
+): string {
+	if (isNumeric(format)) return inFigures(date, format);
 	const sameYear = yearOf(date) === yearOf(relativeTo);
-	return formatter({
-		day: 'numeric',
-		month: 'short',
-		year: sameYear ? undefined : 'numeric'
-	}).format(toUTC(date));
+	return formatter(
+		{ day: 'numeric', month: 'short', year: sameYear ? undefined : 'numeric' },
+		LOCALES[format]
+	).format(toUTC(date));
 }
 
-/** "Saturday, 3 October" */
-export function formatLongDate(date: ISODate): string {
-	return formatter({ weekday: 'long', day: 'numeric', month: 'long' }).format(toUTC(date));
+/** "9 Nov 2031": the date with its year, whatever year it is now. */
+export function formatFullDate(date: ISODate, format: DateFormat = chosen): string {
+	if (isNumeric(format)) return inFigures(date, format);
+	return formatter({ day: 'numeric', month: 'short', year: 'numeric' }, LOCALES[format]).format(
+		toUTC(date)
+	);
+}
+
+/** "Saturday, 3 October", or "Saturday, 03/10/2026" in a format written in figures. */
+export function formatLongDate(date: ISODate, format: DateFormat = chosen): string {
+	if (isNumeric(format)) {
+		return `${formatter({ weekday: 'long' }).format(toUTC(date))}, ${inFigures(date, format)}`;
+	}
+	return formatter({ weekday: 'long', day: 'numeric', month: 'long' }, LOCALES[format]).format(
+		toUTC(date)
+	);
+}
+
+/** A moment on the local clock: "9 Nov, 14:05". */
+export function formatMoment(moment: number, format: DateFormat = chosen): string {
+	const time = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+	return `${formatDate(localDate(moment), today(), format)}, ${time.format(moment)}`;
 }
 
 export function formatMonth(date: ISODate, width: 'long' | 'short' | 'narrow'): string {
 	return formatter({ month: width }).format(toUTC(date));
+}
+
+/**
+ * The format a date is typed in under `format`, or `undefined` when the
+ * browser's own date field is used. A format with a named month is typed in
+ * figures, in the same order.
+ */
+export function entryFormat(format: DateFormat = chosen): NumericFormat | undefined {
+	if (format === 'auto') return undefined;
+	if (format === 'day-month') return 'dmy';
+	if (format === 'month-day') return 'mdy';
+	return format;
+}
+
+/** Reads a date typed in `format`, with any separator; `undefined` if it isn't one. */
+export function parseDate(text: string, format: NumericFormat): ISODate | undefined {
+	const parts = text.trim().split(/\D+/);
+	if (parts.length !== 3 || parts.some((part) => !part)) return undefined;
+
+	const [first, second, third] = parts;
+	const [year, month, day] =
+		format === 'iso'
+			? [first, second, third]
+			: format === 'mdy'
+				? [third, first, second]
+				: [third, second, first];
+	if (year.length !== 4) return undefined;
+
+	const date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+	return isISODate(date) ? date : undefined;
 }
 
 /** A rough, human length of time: "12 days", "5 weeks", "4 months", "9 years". */

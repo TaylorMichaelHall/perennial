@@ -2,6 +2,7 @@
 	import { api, messageOf } from '#lib/api.ts';
 	import ApiKeys from '#lib/components/ApiKeys.svelte';
 	import Backups from '#lib/components/Backups.svelte';
+	import DateFormatSetting from '#lib/components/DateFormatSetting.svelte';
 	import DataTransfer from '#lib/components/DataTransfer.svelte';
 	import NotificationSettings from '#lib/components/NotificationSettings.svelte';
 	import { MIN_PASSWORD_LENGTH } from '#lib/limits.ts';
@@ -39,6 +40,8 @@
 	<h1>Settings</h1>
 
 	<NotificationSettings settings={data.notifications} deliveries={data.deliveries} />
+
+	<DateFormatSetting format={data.dateFormat} />
 
 	<ApiKeys keys={data.apiKeys} />
 

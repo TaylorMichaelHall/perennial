@@ -24,6 +24,9 @@ is built around that window.
   a week before it's due, on the day, and each week it stays overdue. Each
   links to the task, where you can mark it done or **snooze** it.
 
+- Dates are written in the **format you choose**: `9 Nov 2031`, `Nov 9, 2031`,
+  `09/11/2031`, `11/09/2031`, `09.11.2031` or `2031-11-09`.
+
 It is a single small container with a SQLite file, protected by one password.
 
 <picture>

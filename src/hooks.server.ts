@@ -8,15 +8,19 @@ import {
 	SESSION_COOKIE
 } from '#lib/server/auth.ts';
 import { startBackups } from '#lib/server/backups.ts';
+import { setDateFormat } from '#lib/dates.ts';
 import { db } from '#lib/server/db.ts';
 import { bearerToken } from '#lib/server/http.ts';
 import { useApiKey } from '#lib/server/keys.ts';
 import { startNotifier } from '#lib/server/notifications.ts';
+import { getDateFormat } from '#lib/server/preferences.ts';
 
 export const init: ServerInit = () => {
 	// SvelteKit also runs the app while building it, when there is nothing to set up.
 	if (building) return;
 	seedPasswordFromEnvironment();
+	// Reminders are written on the server, in the format chosen in Settings.
+	setDateFormat(getDateFormat());
 	startNotifier();
 	startBackups(db);
 };

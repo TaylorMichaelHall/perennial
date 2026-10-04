@@ -3,6 +3,7 @@
 	import { calendar } from '#lib/calendar.svelte.ts';
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
+	import DateField from '#lib/components/DateField.svelte';
 	import WindowMeter from '#lib/components/WindowMeter.svelte';
 	import { addDays, addMonths, daysBetween, formatDate, formatSpan } from '#lib/dates.ts';
 	import { isSnoozed, repeatLabel, statusOf } from '#lib/tasks.ts';
@@ -109,7 +110,7 @@
 				>
 					<label class="field">
 						<span>Done on</span>
-						<input class="input" type="date" bind:value={doneOn} max={now} required />
+						<DateField bind:value={doneOn} max={now} required />
 					</label>
 					<button class="button quiet">Mark done on this day</button>
 				</form>
@@ -143,7 +144,7 @@
 					>
 						<label class="field">
 							<span>Or until</span>
-							<input class="input" type="date" bind:value={customDate} min={tomorrow} required />
+							<DateField bind:value={customDate} min={tomorrow} required />
 						</label>
 						<button class="button quiet">Snooze</button>
 					</form>

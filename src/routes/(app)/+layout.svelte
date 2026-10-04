@@ -7,7 +7,7 @@
 	import Toast from '#lib/components/Toast.svelte';
 	import { openEditor, ui } from '#lib/ui.svelte.ts';
 
-	let { children } = $props();
+	let { children, data } = $props();
 
 	onMount(startDayClock);
 
@@ -45,7 +45,10 @@
 	</div>
 </header>
 
-{@render children()}
+<!-- Dates are written out as a page is drawn, so a new format draws it again. -->
+{#key data.dateFormat}
+	{@render children()}
+{/key}
 
 {#if ui.editor}
 	<TaskDialog editor={ui.editor} />

@@ -2,6 +2,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api, messageOf } from '#lib/api.ts';
+	import { formatMoment } from '#lib/dates.ts';
 	import {
 		CHANNEL_KINDS,
 		MAX_CHANNELS,
@@ -126,9 +127,9 @@
 				<p class="about" aria-live="polite">
 					{#if status?.lastError}
 						{status.lastError}
-						{#if status.nextRetry} Retrying after {new Date(status.nextRetry).toLocaleString()}.{/if}
+						{#if status.nextRetry} Retrying after {formatMoment(status.nextRetry)}.{/if}
 					{:else if status?.lastSuccess}
-						Last delivered {new Date(status.lastSuccess).toLocaleString()}.
+						Last delivered {formatMoment(status.lastSuccess)}.
 					{:else}
 						No reminders delivered yet.
 					{/if}

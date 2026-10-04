@@ -3,16 +3,22 @@ import {
 	addDays,
 	addInterval,
 	addMonths,
+	dateFormat,
 	dayOf,
 	daysBetween,
+	entryFormat,
 	formatDate,
+	formatFullDate,
 	formatLongDate,
 	formatMonth,
 	formatSpan,
+	isDateFormat,
 	isISODate,
 	isTimeZone,
 	monthOf,
 	nowIn,
+	parseDate,
+	setDateFormat,
 	startOfMonth,
 	today,
 	yearOf
@@ -135,6 +141,64 @@ describe('formatting', () => {
 		expect(formatLongDate('2026-10-03')).not.toMatch(/2026/);
 		expect(formatMonth('2026-01-01', 'long')).toBe(formatMonth('2026-01-31', 'long'));
 		expect(formatMonth('2026-01-31', 'long')).not.toBe(formatMonth('2026-02-01', 'long'));
+	});
+});
+
+describe('a chosen date format', () => {
+	afterEach(() => setDateFormat('auto'));
+
+	it('writes a date with a named month in the order asked for', () => {
+		expect(formatDate('2026-11-09', '2026-01-01', 'day-month')).toBe('9 Nov');
+		expect(formatDate('2031-11-09', '2026-01-01', 'day-month')).toBe('9 Nov 2031');
+		expect(formatDate('2031-11-09', '2026-01-01', 'month-day')).toBe('Nov 9, 2031');
+		expect(formatLongDate('2026-10-03', 'month-day')).toBe('Saturday, October 3');
+	});
+
+	it('keeps the year in a date written in figures', () => {
+		expect(formatDate('2026-11-09', '2026-01-01', 'dmy')).toBe('09/11/2026');
+		expect(formatDate('2026-11-09', '2026-01-01', 'mdy')).toBe('11/09/2026');
+		expect(formatDate('2026-11-09', '2026-01-01', 'dmy-dots')).toBe('09.11.2026');
+		expect(formatDate('2026-11-09', '2026-01-01', 'iso')).toBe('2026-11-09');
+		expect(formatLongDate('2026-10-03', 'iso')).toMatch(/, 2026-10-03$/);
+	});
+
+	it('is used wherever no format is asked for, once set', () => {
+		setDateFormat('iso');
+		expect(dateFormat()).toBe('iso');
+		expect(formatDate('2026-11-09', '2026-01-01')).toBe('2026-11-09');
+		expect(formatFullDate('2026-11-09')).toBe('2026-11-09');
+	});
+
+	it('recognises its own names and nothing else', () => {
+		expect(isDateFormat('dmy')).toBe(true);
+		expect(isDateFormat('ymd')).toBe(false);
+		expect(isDateFormat(undefined)).toBe(false);
+	});
+
+	it('is typed in figures, in the same order', () => {
+		expect(entryFormat('auto')).toBeUndefined();
+		expect(entryFormat('day-month')).toBe('dmy');
+		expect(entryFormat('month-day')).toBe('mdy');
+		expect(entryFormat('iso')).toBe('iso');
+	});
+});
+
+describe('parseDate', () => {
+	it('reads a date in the order of its format, with any separator', () => {
+		expect(parseDate('09/11/2026', 'dmy')).toBe('2026-11-09');
+		expect(parseDate('09/11/2026', 'mdy')).toBe('2026-09-11');
+		expect(parseDate(' 9.11.2026 ', 'dmy-dots')).toBe('2026-11-09');
+		expect(parseDate('9-11-2026', 'dmy')).toBe('2026-11-09');
+		expect(parseDate('2026-11-09', 'iso')).toBe('2026-11-09');
+	});
+
+	it('refuses what is not a date', () => {
+		expect(parseDate('', 'dmy')).toBeUndefined();
+		expect(parseDate('09/11', 'dmy')).toBeUndefined();
+		expect(parseDate('09/11/26', 'dmy')).toBeUndefined();
+		expect(parseDate('31/02/2026', 'dmy')).toBeUndefined();
+		expect(parseDate('13/13/2026', 'mdy')).toBeUndefined();
+		expect(parseDate('2026-11-09', 'dmy')).toBeUndefined();
 	});
 });
 

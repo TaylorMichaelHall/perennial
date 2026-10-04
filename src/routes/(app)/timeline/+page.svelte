@@ -37,10 +37,17 @@
 		{ months: 120, label: '10 years', short: '10y' }
 	];
 	const AVERAGE_DAYS_PER_MONTH = 30.4375;
-	const MONTHS_BEFORE_TODAY = 12;
 	const YEARS_AHEAD = 15;
 	/** How far in from the left edge today sits when the view is centred on it. */
 	const TODAY_INSET = 0.2;
+	/**
+	 * Enough of the past that today can sit at its inset at the widest zoom. With
+	 * less, that view is stopped short by the start of the chart, and zooming
+	 * back in from it lands on a later date.
+	 */
+	const MONTHS_BEFORE_TODAY = Math.ceil(ZOOMS.at(-1)!.months * TODAY_INSET);
+	/** A year narrower than this, in pixels, has no room for its label. */
+	const MIN_YEAR_LABEL_WIDTH = 64;
 	const MIN_BAR_WIDTH = 6;
 	/** Pointer travel before a press on the timeline counts as a drag. */
 	const DRAG_THRESHOLD = 4;
@@ -189,6 +196,7 @@
 
 	// Dragging the timeline with a mouse pans it, as a touch drag already does.
 	let drag: { startX: number; scrollLeft: number; moved: boolean } | null = null;
+	let dragging = $state(false);
 
 	function onpointerdown(event: PointerEvent) {
 		if (event.pointerType !== 'mouse' || event.button !== 0 || !scroller) return;
@@ -198,13 +206,17 @@
 	function onpointermove(event: PointerEvent) {
 		if (!drag || !scroller) return;
 		const distance = event.clientX - drag.startX;
-		if (!drag.moved && Math.abs(distance) < DRAG_THRESHOLD) return;
-		drag.moved = true;
-		scroller.setPointerCapture(event.pointerId);
+		if (!drag.moved) {
+			if (Math.abs(distance) < DRAG_THRESHOLD) return;
+			drag.moved = true;
+			dragging = true;
+			scroller.setPointerCapture(event.pointerId);
+		}
 		scroller.scrollLeft = drag.scrollLeft - distance;
 	}
 
 	function onpointerup() {
+		dragging = false;
 		// Keep `drag` until the click that follows a drag has been swallowed.
 		if (!drag?.moved) drag = null;
 	}
@@ -251,6 +263,7 @@
 		<!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
 		<div
 			class="scroller"
+			class:dragging
 			bind:this={scroller}
 			bind:clientWidth={viewportWidth}
 			{onpointerdown}
@@ -259,6 +272,7 @@
 			onpointercancel={onpointerup}
 			{onclickcapture}
 			{onclick}
+			ondragstart={(event) => event.preventDefault()}
 			onscroll={() => (tip = null)}
 		>
 			<div
@@ -281,12 +295,13 @@
 				<div class="axis" aria-hidden="true">
 					<div class="years">
 						{#each years as year, index (year)}
-							<div
-								style:left="{x(year)}px"
-								style:width="{x(years[index + 1] ?? end) - x(year)}px"
-							>
-								<span>{yearOf(year)}</span>
-							</div>
+							{@const width = x(years[index + 1] ?? end) - x(year)}
+							<!-- The chart starts part of the way through its first year. -->
+							{#if width >= MIN_YEAR_LABEL_WIDTH}
+								<div style:left="{x(year)}px" style:width="{width}px">
+									<span>{yearOf(year)}</span>
+								</div>
+							{/if}
 						{/each}
 					</div>
 					<div class="months">
@@ -448,6 +463,13 @@
 		background: var(--surface);
 		cursor: grab;
 		overscroll-behavior-x: contain;
+		/* A drag pans the chart, so it mustn't select the text it passes over. */
+		user-select: none;
+		-webkit-user-select: none;
+	}
+
+	.scroller.dragging {
+		cursor: grabbing;
 	}
 
 	.canvas {

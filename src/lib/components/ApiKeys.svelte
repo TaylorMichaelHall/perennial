@@ -3,6 +3,7 @@
 	import { calendar } from '#lib/calendar.svelte.ts';
 	import { refreshAll } from '$app/navigation';
 	import { api, messageOf } from '#lib/api.ts';
+	import DateField from '#lib/components/DateField.svelte';
 	import { addDays, endOfLocalDay, formatDate, localDate } from '#lib/dates.ts';
 	import type { ApiKey, MintedApiKey } from '#lib/keys.ts';
 	import { MAX_KEY_NAME_LENGTH } from '#lib/limits.ts';
@@ -130,7 +131,7 @@
 		</label>
 		<label class="field">
 			<span>Expires after (optional)</span>
-			<input class="input" type="date" bind:value={expiresOn} min={addDays(calendar.today, 1)} />
+			<DateField bind:value={expiresOn} min={addDays(calendar.today, 1)} />
 		</label>
 
 		{#if error}
