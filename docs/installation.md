@@ -16,10 +16,11 @@ The container runs as user 1000, which has to be able to write to `data`. If
 that isn't your own user, hand the directory over with
 `sudo chown 1000:1000 data`.
 
-This pulls the image published from `main`,
-`ghcr.io/taylormichaelhall/perennial:latest`. To update, run `git pull` and
-`docker compose pull`, then `docker compose up -d` again. To build the image
-from the source instead, run `docker compose up -d --build`.
+This pulls the latest release, `ghcr.io/taylormichaelhall/perennial:latest`.
+To update, run `git pull` and `docker compose pull`, then `docker compose up -d`
+again. To stay on one version, change `latest` in `docker-compose.yml` to a
+version such as `1.2.3`, or `1.2` for its fixes too. To build the image from
+the source instead, run `docker compose up -d --build`.
 
 ## Setting the password
 

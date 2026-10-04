@@ -9,8 +9,14 @@ test('adds a monthly task, completes it, undoes that, and stays on the 31st', as
 	await page.getByRole('banner').getByRole('button', { name: /Add/ }).click();
 	const dialog = page.getByRole('dialog');
 	await dialog.getByLabel('Name').fill(title);
-	await dialog.getByLabel('Can be started').fill('2027-01-31');
+	// The start follows the due date until it is set by hand.
+	await dialog.getByLabel('Due by').fill('2027-03-31');
+	await expect(dialog.getByLabel('Can be started')).toHaveValue('2027-02-28');
+	await dialog.getByRole('button', { name: '1 week before due' }).click();
+	await expect(dialog.getByLabel('Can be started')).toHaveValue('2027-03-24');
 	await dialog.getByLabel('Due by').fill('2027-01-31');
+	await expect(dialog.getByLabel('Can be started')).toHaveValue('2027-01-24');
+	await dialog.getByLabel('Can be started').fill('2027-01-31');
 	await dialog.getByRole('radio', { name: 'Every' }).check();
 	await dialog.getByLabel('Months or years', { exact: true }).selectOption('month');
 	await dialog.getByLabel('Tags').fill('Home, money');

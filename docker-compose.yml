@@ -1,6 +1,6 @@
 services:
   perennial:
-    # The image published from `main`. If it can't be pulled, it is built from
+    # The latest released image. If it can't be pulled, it is built from
     # this directory instead; `docker compose up -d --build` always builds it.
     image: ghcr.io/taylormichaelhall/perennial:latest
     build: .

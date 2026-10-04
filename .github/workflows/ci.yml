@@ -3,11 +3,22 @@ name: CI
 on:
   push:
     branches: [main]
+    # A release is a version tag, e.g. v1.2.3; that is what publishes the image.
+    tags: ['v*.*.*']
+    # Words alone change nothing that is tested or shipped. (Tags ignore this.)
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - LICENSE
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - LICENSE
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  # A newer push replaces a pull request's run, but a publish from main is left to finish.
+  # A newer push replaces a pull request's run, but a release is left to finish.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -61,8 +72,8 @@ jobs:
 
   publish:
     name: Publish Docker image
-    # Only from main, and only once everything above has passed.
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    # Only for a version tag, and only once everything above has passed.
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     needs: [check, browser, image]
     runs-on: ubuntu-latest
     permissions:
@@ -81,9 +92,10 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}
+          # v1.2.3 is tagged 1.2.3, 1.2 and latest.
           tags: |
-            type=raw,value=latest
-            type=sha
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
       - uses: docker/build-push-action@v6
         with:
           context: .

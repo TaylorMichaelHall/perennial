@@ -13,19 +13,8 @@ is built around that window.
   you can see a decade at a glance.
 - Tasks **repeat** on a schedule ("every April") or from when they were last
   done ("three months after I change the filter").
-  A task due on the 31st falls on the 28th in February and goes back to the
-  31st in March.
-- A deadline is either **hard** (the passport expires) or one that can slip.
-- **Tags** group tasks (`#house`, `#car`), and **search** narrows the agenda
-  and the timeline to a word or a tag.
-- A task done last week but only ticked off today can be **marked done on the
-  day it happened**, so its history and its next window are right.
-- **Notifications** go to Discord, Slack, Telegram, or ntfy when a task opens,
-  a week before it's due, on the day, and each week it stays overdue. Each
-  links to the task, where you can mark it done or **snooze** it.
-
-- Dates are written in the **format you choose**: `9 Nov 2031`, `Nov 9, 2031`,
-  `09/11/2031`, `11/09/2031`, `09.11.2031` or `2031-11-09`.
+- **Notifications** go to Discord, Slack, Telegram, or ntfy when a task opens
+  and as it comes due.
 
 It is a single small container with a SQLite file, protected by one password.
 

@@ -21,9 +21,18 @@ export and import. They never touch `./data`.
 
 GitHub Actions (`.github/workflows/ci.yml`) runs the lint, type-check, unit
 tests and browser tests, and builds the Docker image, on every pull request and
-every push to `main`. On `main`, once those pass, it publishes the image to
-`ghcr.io/taylormichaelhall/perennial` for amd64 and arm64, tagged `latest` and
-with the commit it was built from.
+every push to `main`, unless only the documentation changed.
+
+A new image is published only for a release, which is a version tag:
+
+```sh
+npm version patch   # or minor, or major: bumps package.json, commits, tags v1.2.3
+git push --follow-tags
+```
+
+Once the checks pass on the tag, the image goes to
+`ghcr.io/taylormichaelhall/perennial` for amd64 and arm64, tagged `1.2.3`,
+`1.2` and `latest`.
 
 The screenshots in the README are taken by `npm run screenshots`, which fills the built
 app with sample tasks and writes them to `docs/screenshots`.

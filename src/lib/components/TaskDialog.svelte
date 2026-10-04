@@ -5,7 +5,7 @@
 	import { refreshAll } from '$app/navigation';
 	import { api, messageOf } from '#lib/api.ts';
 	import DateField from '#lib/components/DateField.svelte';
-	import { addMonths, formatDate, type RepeatUnit } from '#lib/dates.ts';
+	import { addDays, addMonths, formatDate, type ISODate, type RepeatUnit } from '#lib/dates.ts';
 	import { MAX_NOTES_LENGTH, MAX_REPEAT_EVERY, MAX_TITLE_LENGTH } from '#lib/limits.ts';
 	import { parseTags, statusOf, type RepeatFrom, type Task, type TaskFields } from '#lib/tasks.ts';
 	import { closeEditor, closeTask, reopenTask, showToast, type Editor } from '#lib/ui.svelte.ts';
@@ -25,10 +25,23 @@
 	// Initial form values stay put while the user edits across midnight.
 	const initialDay = untrack(() => calendar.today);
 
+	/** How long before it is due a task can be started, for the buttons that fill that in. */
+	const LEADS = [
+		{ label: '1 week before due', from: (due: ISODate) => addDays(due, -7) },
+		{ label: '1 month before due', from: (due: ISODate) => addMonths(due, -1) },
+		{ label: '6 months before due', from: (due: ISODate) => addMonths(due, -6) }
+	];
+	type Lead = (typeof LEADS)[number];
+
 	let title = $state(task?.title ?? suggestedTitle);
 	let notes = $state(task?.notes ?? '');
-	let opensOn = $state(task?.opens_on ?? initialDay);
 	let dueOn = $state(task?.due_on ?? addMonths(initialDay, 1));
+	let opensOn = $state(task?.opens_on ?? initialDay);
+	// The lead the start was filled in from, which it keeps when the due date moves.
+	// A new task starts out a month long.
+	let lead = $state<Lead | undefined>(
+		task ? LEADS.find((lead) => lead.from(task.due_on) === task.opens_on) : LEADS[1]
+	);
 	let hard = $state(task?.hard ?? false);
 	let doesRepeat = $state(task ? task.repeat_every !== null : false);
 	let repeatEvery = $state(task?.repeat_every ?? 1);
@@ -52,6 +65,16 @@
 			error = messageOf(cause);
 			saving = false;
 		}
+	}
+
+	function setDue(date: ISODate) {
+		dueOn = date;
+		if (lead && date) opensOn = lead.from(date);
+	}
+
+	function setOpens(date: ISODate) {
+		opensOn = date;
+		lead = undefined;
 	}
 
 	function save(event: SubmitEvent) {
@@ -123,15 +146,32 @@
 			/>
 		</label>
 
-		<div class="pair">
-			<label class="field">
-				<span>Can be started</span>
-				<DateField bind:value={opensOn} required />
-			</label>
-			<label class="field">
-				<span>Due by</span>
-				<DateField bind:value={dueOn} min={opensOn} required />
-			</label>
+		<div class="window">
+			<div class="pair">
+				<label class="field">
+					<span>Due by</span>
+					<DateField bind:value={() => dueOn, setDue} required />
+				</label>
+				<label class="field">
+					<span>Can be started</span>
+					<DateField bind:value={() => opensOn, setOpens} max={dueOn || undefined} required />
+				</label>
+			</div>
+			<div class="leads" role="group" aria-label="Start it">
+				{#each LEADS as option (option.label)}
+					<button
+						type="button"
+						aria-pressed={lead === option}
+						disabled={!dueOn}
+						onclick={() => {
+							lead = option;
+							opensOn = option.from(dueOn);
+						}}
+					>
+						{option.label}
+					</button>
+				{/each}
+			</div>
 		</div>
 
 		<fieldset class="field">
@@ -284,6 +324,42 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.5rem;
+	}
+
+	.window {
+		display: grid;
+		gap: 0.5rem;
+	}
+
+	.leads {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.375rem;
+	}
+
+	.leads button {
+		min-height: 2rem;
+		padding: 0 0.625rem;
+		border: 1px solid var(--rule);
+		border-radius: 1rem;
+		background: none;
+		color: var(--ink-soft);
+		font-size: var(--text-small);
+		font-weight: 500;
+	}
+
+	.leads button:hover:not(:disabled) {
+		border-color: var(--ink-soft);
+	}
+
+	.leads button[aria-pressed='true'] {
+		border-color: var(--ink);
+		background: var(--ink);
+		color: var(--paper);
+	}
+
+	.leads button:disabled {
+		opacity: 0.5;
 	}
 
 	/* Side by side while each date has room to be read; stacked otherwise. */
