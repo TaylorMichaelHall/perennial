@@ -70,7 +70,8 @@ const MIGRATIONS = [
 	ALTER TABLE occurrences ADD COLUMN due_day INTEGER;
 	`,
 	// A JSON array of strings.
-	`ALTER TABLE tasks ADD COLUMN tags TEXT NOT NULL DEFAULT '[]';`
+	`ALTER TABLE tasks ADD COLUMN tags TEXT NOT NULL DEFAULT '[]';`,
+	`ALTER TABLE occurrences ADD COLUMN note TEXT NOT NULL DEFAULT '';`
 ];
 
 export function migrate(database: DatabaseSync): void {

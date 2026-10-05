@@ -185,3 +185,22 @@ test('searches by word and narrows by tag, on the agenda and the timeline', asyn
 	await expect(shown('Oil the garage door')).toBeVisible();
 	await expect(shown('Rotate the tyres')).toBeHidden();
 });
+
+test('shows last year’s completion note beside this year’s note field', async ({ page }) => {
+	await setToday(page, '2026-05-10');
+	const { id } = await createTask(page, { title: 'Drain water heater', opens_on: '2026-05-01', due_on: '2026-05-31', repeat_every: 1, repeat_unit: 'year' });
+	await page.goto(`/tasks/${id}`);
+	await page.getByLabel('Completion note (optional)').fill('Replaced the washers on the hose');
+	await page.getByRole('button', { name: 'Mark done', exact: true }).click();
+	await expect(toast(page)).toContainText('Marked done.');
+	await setToday(page, '2027-05-10');
+	await page.reload();
+	const previous = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Last time', exact: true }) });
+	await expect(previous).toContainText('Completed 10 May 2026');
+	await expect(previous).toContainText('Replaced the washers on the hose');
+	await expect(page.getByLabel('Completion note (optional)')).toHaveValue('');
+	await page.getByLabel('Completion note (optional)').fill('All washers still in good condition');
+	await page.getByRole('button', { name: 'Mark done', exact: true }).click();
+	await expect(previous).toContainText('Completed 10 May 2027');
+	await expect(previous).toContainText('All washers still in good condition');
+});

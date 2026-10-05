@@ -23,6 +23,7 @@ export interface Occurrence extends Window {
 	id: number;
 	closed_on: ISODate;
 	skipped: boolean;
+	note: string;
 }
 
 /**

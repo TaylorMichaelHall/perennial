@@ -196,6 +196,21 @@ describe('storing tasks', () => {
 });
 
 describe('closeWindow', () => {
+	it('stores completion notes and removes them when undone', () => {
+		const { id } = createTask(fields());
+		const completed = closeWindow(id, '2026-10-12', false, undefined, '  Replaced the washers on the hose  ');
+		expect(completed.history[0].note).toBe('Replaced the washers on the hose');
+		expect(reopenWindow(id).history).toEqual([]);
+	});
+
+	it('rejects invalid notes without completing the task', () => {
+		const { id } = createTask(fields());
+		for (const note of [null, 42, 'x'.repeat(5001)]) {
+			expect(() => closeWindow(id, '2026-10-12', false, undefined, note)).toThrow(httpError(400));
+		}
+		expect(getTask(id).history).toEqual([]);
+	});
+
 	it('moves a repeating task on to its next window and files the old one', () => {
 		const { id } = createTask(fields());
 		const task = closeWindow(id, '2026-10-12', false);
@@ -207,6 +222,7 @@ describe('closeWindow', () => {
 				opens_on: '2026-09-01',
 				due_on: '2026-10-31',
 				closed_on: '2026-10-12',
+				note: '',
 				skipped: false
 			}
 		]);

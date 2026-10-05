@@ -57,7 +57,7 @@ export const GET: RequestHandler = ({ url }) => {
 			snoozed_until:
 				'date or null: while this is in the future the task is set aside and sends no reminders',
 			history:
-				'array of past windows, most recent first, each {id, opens_on, due_on, closed_on, skipped}',
+				'array of past windows, most recent first, each {id, opens_on, due_on, closed_on, skipped, note}',
 			status:
 				'Not stored; work it out from today’s date. "done" if done_on is set, "upcoming" if today is before opens_on, "overdue" if today is after due_on, otherwise "open".'
 		},
@@ -109,7 +109,8 @@ export const GET: RequestHandler = ({ url }) => {
 				body: {
 					version: 'integer, required: current task version; stale requests return 409',
 					on: 'date, required: the day it was done or skipped. Usually today, but an earlier day is fine; a task that repeats from completion measures its next window from it.',
-					skipped: 'boolean, default false: true to skip the window rather than mark it done'
+					skipped: 'boolean, default false: true to skip the window rather than mark it done',
+					note: 'optional completion note, at most 5000 characters; stored in history'
 				},
 				returns: 'the updated task, now in its next window or finished'
 			},

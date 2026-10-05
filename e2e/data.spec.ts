@@ -76,7 +76,7 @@ test('exports every task to a file that can be imported again', async ({ page })
 	expect(download.suggestedFilename()).toBe('perennial-2027-09-10.json');
 
 	const exported = JSON.parse(await readFile(await download.path(), 'utf8'));
-	expect(exported).toMatchObject({ format: 'perennial', version: 2 });
+	expect(exported).toMatchObject({ format: 'perennial', version: 3 });
 	const tyres = exported.tasks.find((task: { title: string }) => task.title === 'Check the tyre pressures');
 	expect(tyres).toMatchObject({ tags: ['car'], opens_day: 31, due_day: 31 });
 	expect(tyres).not.toHaveProperty('id');

@@ -64,7 +64,7 @@ describe('exportData', () => {
 		const [exported] = exportData().tasks;
 		expect(exported).not.toHaveProperty('id');
 		expect(exported.history).toEqual([
-			{ opens_on: '2026-09-01', due_on: '2026-10-31', closed_on: '2026-10-12', skipped: false }
+			{ opens_on: '2026-09-01', due_on: '2026-10-31', closed_on: '2026-10-12', skipped: false, note: '' }
 		]);
 	});
 });
@@ -222,4 +222,18 @@ describe('importTasks', () => {
 		expect(() => importTasks(parseExport(input).tasks)).toThrow();
 		expect(listTasks()).toEqual([]);
 	});
+});
+
+it('preserves completion notes through export and import', () => {
+	const { id } = createTask(fields());
+	closeWindow(id, '2026-10-12', false, undefined, 'Replaced the washers on the hose');
+	const exported = exportData();
+	db().exec('DELETE FROM tasks');
+	importTasks(parseExport(exported).tasks);
+	expect(listTasks()[0].history[0].note).toBe('Replaced the washers on the hose');
+});
+
+it('reads version 2 history without completion notes', () => {
+	const parsed = parseExport(file({ version: 2, tasks: [{ ...task, history: [{ opens_on: '2025-08-01', due_on: '2025-11-14', closed_on: '2025-10-01', skipped: false }] }] }));
+	expect(parsed.tasks[0].history[0].note).toBe('');
 });

@@ -18,7 +18,8 @@ function toOccurrence(row: Row): Occurrence {
 		opens_on: row.opens_on as ISODate,
 		due_on: row.due_on as ISODate,
 		closed_on: row.closed_on as ISODate,
-		skipped: row.skipped === 1
+		skipped: row.skipped === 1,
+		note: row.note as string
 	};
 }
 
@@ -191,7 +192,8 @@ export function deleteTask(id: number): void {
  * being skipped. The window is filed in the task's history; a repeating task
  * then moves on to its next window and a one-off task is finished.
  */
-export function closeWindow(id: number, closedOn: ISODate, skipped: boolean, expectedVersion?: number): Task {
+export function closeWindow(id: number, closedOn: ISODate, skipped: boolean, expectedVersion?: number, note: unknown = ''): Task {
+	const completionNote = parseCompletionNote(note);
 	return transaction(() => {
 		const task = getTask(id);
 		checkVersion(task, expectedVersion);
@@ -199,10 +201,10 @@ export function closeWindow(id: number, closedOn: ISODate, skipped: boolean, exp
 
 		db()
 			.prepare(
-				`INSERT INTO occurrences (task_id, opens_on, due_on, opens_day, due_day, closed_on, skipped)
-				 VALUES (?, ?, ?, ?, ?, ?, ?)`
+				`INSERT INTO occurrences (task_id, opens_on, due_on, opens_day, due_day, closed_on, skipped, note)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 			)
-			.run(id, task.opens_on, task.due_on, task.opens_day, task.due_day, closedOn, skipped ? 1 : 0);
+			.run(id, task.opens_on, task.due_on, task.opens_day, task.due_day, closedOn, skipped ? 1 : 0, completionNote);
 
 		const next = nextWindow(task, closedOn, skipped);
 		if (next) {
@@ -267,4 +269,13 @@ function checkVersion(task: Task, expectedVersion?: number): void {
 	if (expectedVersion !== undefined && task.version !== expectedVersion) {
 		error(409, "This task has changed. Refresh it before trying again.");
 	}
+}
+
+/** Validates completion notes from API requests and imported history. */
+export function parseCompletionNote(value: unknown): string {
+	if (value === undefined) return '';
+	if (typeof value !== 'string' || value.length > MAX_NOTES_LENGTH) {
+		error(400, `Completion notes must be text of at most ${MAX_NOTES_LENGTH} characters.`);
+	}
+	return value.trim();
 }

@@ -3,9 +3,10 @@
 	import { calendar } from '#lib/calendar.svelte.ts';
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
+	import { MAX_NOTES_LENGTH } from '#lib/limits.ts';
 	import DateField from '#lib/components/DateField.svelte';
 	import WindowMeter from '#lib/components/WindowMeter.svelte';
-	import { addDays, addMonths, daysBetween, formatDate, formatSpan } from '#lib/dates.ts';
+	import { addDays, addMonths, daysBetween, formatDate, formatFullDate, formatSpan } from '#lib/dates.ts';
 	import { isSnoozed, repeatLabel, statusOf } from '#lib/tasks.ts';
 	import { closeTask, openEditor, reopenTask, snoozeTask, ui } from '#lib/ui.svelte.ts';
 
@@ -17,6 +18,9 @@
 	const task = $derived(data.tasks.find((candidate) => candidate.id === Number(page.params.id)));
 	const status = $derived(task ? statusOf(task, now) : null);
 	const snoozed = $derived(task ? isSnoozed(task, now) : false);
+
+	let completionNote = $state('');
+	const lastNote = $derived(task?.history.find((past) => !past.skipped && past.note));
 
 	let customDate = $state(untrack(() => addDays(calendar.today, 14)));
 	let doneOn = $state(untrack(() => addDays(calendar.today, -1)));
@@ -76,11 +80,26 @@
 			</div>
 		{/if}
 
+		{#if status !== 'done' && task.repeat_every && lastNote}
+			<section>
+				<h2>Last time</h2>
+				<p>Completed {formatFullDate(lastNote.closed_on)}</p>
+				<p class="notes">{lastNote.note}</p>
+			</section>
+		{/if}
+
+		{#if status !== 'done'}
+			<label class="field">
+				<span>Completion note (optional)</span>
+				<textarea class="input" bind:value={completionNote} maxlength={MAX_NOTES_LENGTH} rows="3" placeholder="What would help you next time?" ></textarea>
+			</label>
+		{/if}
+
 		<div class="actions">
 			{#if status === 'done'}
 				<button class="button" onclick={() => reopenTask(task)}>Reopen</button>
 			{:else}
-				<button class="button" onclick={() => closeTask(task)}>
+				<button class="button" onclick={async () => { if (await closeTask(task, { note: completionNote })) completionNote = ''; }}>
 					{status === 'upcoming' ? 'Mark done early' : 'Mark done'}
 				</button>
 				{#if task.repeat_every}
@@ -103,9 +122,9 @@
 				</p>
 				<form
 					class="actions"
-					onsubmit={(event) => {
+					onsubmit={async (event) => {
 						event.preventDefault();
-						closeTask(task, { on: doneOn });
+						if (await closeTask(task, { on: doneOn, note: completionNote })) completionNote = '';
 					}}
 				>
 					<label class="field">
@@ -157,7 +176,10 @@
 				<h2>History</h2>
 				<ul>
 					{#each task.history as occurrence (occurrence.id)}
-						<li>{occurrence.skipped ? 'Skipped' : 'Done'} {formatDate(occurrence.closed_on, now)}</li>
+						<li>
+							{occurrence.skipped ? 'Skipped' : 'Done'} {formatDate(occurrence.closed_on, now)}
+							{#if occurrence.note}<p class="notes">{occurrence.note}</p>{/if}
+						</li>
 					{/each}
 				</ul>
 			</section>

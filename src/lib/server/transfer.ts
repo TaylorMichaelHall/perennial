@@ -14,11 +14,11 @@
 import { error, isHttpError } from '@sveltejs/kit';
 import { addMonths, dayOf, isISODate, type ISODate } from '#lib/dates.ts';
 import { db, transaction } from '#lib/server/db.ts';
-import { listTasks, parseTaskFields } from '#lib/server/tasks.ts';
+import { listTasks, parseCompletionNote, parseTaskFields } from '#lib/server/tasks.ts';
 import type { Occurrence, Task } from '#lib/tasks.ts';
 
 export const EXPORT_FORMAT = 'perennial';
-export const EXPORT_VERSION = 2;
+export const EXPORT_VERSION = 3;
 
 type Json = Record<string, unknown>;
 
@@ -29,6 +29,8 @@ type Json = Record<string, unknown>;
 const UPGRADES: ((file: Json) => Json)[] = [
 	// Version 2 added `tags`, `opens_day` and `due_day`. A task without them
 	// has no tags and aims for the days its dates are on, as it does when read.
+	(file) => file,
+	// Version 3 added optional completion notes; missing notes read as empty text.
 	(file) => file
 ];
 
@@ -64,7 +66,8 @@ function withoutIds(task: Task): ExportedTask {
 			opens_on: past.opens_on,
 			due_on: past.due_on,
 			closed_on: past.closed_on,
-			skipped: past.skipped
+			skipped: past.skipped,
+			note: past.note
 		}))
 	};
 }
@@ -142,13 +145,13 @@ function parseTask(input: unknown): ExportedTask {
 
 function parseOccurrence(input: unknown): ExportedOccurrence {
 	if (typeof input !== 'object' || input === null) error(400, 'Expected a past window.');
-	const { opens_on, due_on, closed_on, skipped } = input as Json;
+	const { opens_on, due_on, closed_on, skipped, note } = input as Json;
 
 	if (!isISODate(opens_on) || !isISODate(due_on) || !isISODate(closed_on)) {
 		error(400, 'A past window has a date that isn’t a date.');
 	}
 	if (due_on < opens_on) error(400, 'A past window is due before it opens.');
-	return { opens_on, due_on, closed_on, skipped: skipped === true };
+	return { opens_on, due_on, closed_on, skipped: skipped === true, note: parseCompletionNote(note) };
 }
 
 /**
@@ -164,7 +167,7 @@ export function importTasks(tasks: ExportedTask[]): number {
 			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 		);
 		const insertOccurrence = db().prepare(
-			'INSERT INTO occurrences (task_id, opens_on, due_on, closed_on, skipped) VALUES (?, ?, ?, ?, ?)'
+			'INSERT INTO occurrences (task_id, opens_on, due_on, closed_on, skipped, note) VALUES (?, ?, ?, ?, ?, ?)'
 		);
 
 		for (const task of tasks) {
@@ -190,7 +193,8 @@ export function importTasks(tasks: ExportedTask[]): number {
 					past.opens_on,
 					past.due_on,
 					past.closed_on,
-					past.skipped ? 1 : 0
+					past.skipped ? 1 : 0,
+					past.note
 				);
 			}
 		}

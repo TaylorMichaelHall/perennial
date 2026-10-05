@@ -49,21 +49,24 @@ export function dismissToast(): void {
  */
 export async function closeTask(
 	task: Task,
-	{ skipped = false, on = today() }: { skipped?: boolean; on?: ISODate } = {}
-): Promise<void> {
+	{ skipped = false, on = today(), note = '' }: { skipped?: boolean; on?: ISODate; note?: string } = {}
+): Promise<boolean> {
 	try {
 		const updated = await api<Task>('POST', `/api/tasks/${task.id}/close`, {
 			on,
 			version: task.version,
-			skipped
+			skipped,
+			note
 		});
 		await refreshAll();
 
 		const outcome = skipped ? 'Skipped.' : 'Marked done.';
 		const next = updated.done_on ? '' : ` Opens again ${formatDate(updated.opens_on)}.`;
 		showToast(outcome + next, () => reopenTask(updated));
+		return true;
 	} catch (error) {
 		showToast(messageOf(error));
+		return false;
 	}
 }
 

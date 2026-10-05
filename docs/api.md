@@ -22,3 +22,6 @@ to repeat the action. Existing API scripts must include this field.
 `GET /api/tasks?q=boiler` searches titles, notes and tags; `?q=%23house` lists
 the tasks tagged `house`. When closing a task, `on` is the day it was done,
 which can be earlier than today.
+
+Include an optional `note` (up to 5000 characters) when closing a task. It is
+stored with that occurrence in history and included in exports.
